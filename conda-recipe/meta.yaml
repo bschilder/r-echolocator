@@ -1,0 +1,73 @@
+{% set version = '1.1.0' %}
+
+{% set posix = 'm2-' if win else '' %}
+{% set native = 'm2w64-' if win else '' %}
+
+package:
+  name: r-datamaid
+  version: {{ version|replace("-", "_") }}
+
+source:
+  fn: dataMaid_1.1.0.tar.gz
+  url:
+    - {{ cran_mirror }}/src/contrib/dataMaid_1.1.0.tar.gz
+    - {{ cran_mirror }}/src/contrib/Archive/dataMaid/dataMaid_1.1.0.tar.gz
+  sha256: 5ec8b954a7b3503b030c50bcf96cdec9a6b2f2c5eadb1626048b65c200f397e9
+
+build:
+  merge_build_host: True  # [win]
+  # If this is a new build for the same version, increment the build number.
+  number: 0
+
+  # This is required to make R link correctly on Linux.
+  rpaths:
+    - lib/R/lib/
+    - lib/
+
+# Suggests: knitr, rmarkdown, testthat
+requirements:
+  build:
+
+  host:
+    - {{ environ.get('R_VERSION') }}
+    - r-ggplot2
+    - r-gridextra
+    - r-haven
+    - r-htmltools
+    - r-magrittr
+    - r-pander
+    - r-robustbase
+    - r-whoami
+
+  run:
+    - {{ environ.get('R_VERSION') }}
+    - r-ggplot2
+    - r-gridextra
+    - r-haven
+    - r-htmltools
+    - r-magrittr
+    - r-pander
+    - r-robustbase
+    - r-whoami
+
+test:
+  commands:
+    # You can put additional test commands to be run here.
+    - $R -e "library('dataMaid')"           # [not win]
+    - "\"%R%\" -e \"library('dataMaid')\""  # [win]
+
+  # You can also put a file called run_test.py, run_test.sh, or run_test.bat
+  # in the recipe that will be run at test time.
+
+  # requires:
+    # Put any additional test requirements here.
+
+about:
+  home: https://github.com/ekstroem/dataMaid
+  license: GPL-2
+  summary: 'Data screening is an important first step of any statistical analysis. dataMaid autogenerates
+    a customizable data report with a thorough summary of the checks and the results
+    that a human can use to identify possible errors. It provides an extendable suite
+    of test for common potential errors in a dataset. '
+
+  license_family: GPL2

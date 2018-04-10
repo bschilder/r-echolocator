@@ -1,0 +1,76 @@
+
+# Validate the configuration file for appveyor with
+# https://ci.appveyor.com/tools/validate-yaml
+
+# Warning: appveyor considers every output to the command line as an exception
+#          if ps: is used.
+
+notifications:
+  - provider: Email
+    on_build_failure: false
+    on_build_success: false
+    on_build_status_changed: false
+
+environment:
+
+  global:
+    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+    # /E:ON and /V:ON options are not enabled in the batch script intepreter
+    # See: http://stackoverflow.com/a/13751649/163740
+    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\continuous-integration\\appveyor\\run_with_env.cmd"
+
+  matrix:
+    - MINICONDA: "C:\\Miniconda36-x64"
+      PYTHON_VERSION: "36"
+      PYTHON_ARCH: "64"
+      R_VERSION: "mro-base"
+      RTOOLS_VERSION: "34"
+    - MINICONDA: "C:\\Miniconda36-x64"
+      PYTHON_VERSION: "36"
+      PYTHON_ARCH: "64"
+      R_VERSION: "r-base"
+      RTOOLS_VERSION: "34"
+    - MINICONDA: "C:\\Miniconda36"
+      PYTHON_VERSION: "36"
+      PYTHON_ARCH: "32"
+      R_VERSION: "r-base"
+      RTOOLS_VERSION: "34"
+
+branches:
+  only:
+    - master
+
+install:
+  # If there is a newer build queued for the same PR, cancel this one.
+  # The AppVeyor 'rollout builds' option is supposed to serve the same
+  # purpose but it is problematic because it tends to cancel builds pushed
+  # directly to master instead of just PR builds (or the converse).
+  # credits: JuliaLang developers.
+  - ps: if ($env:APPVEYOR_PULL_REQUEST_NUMBER -and $env:APPVEYOR_BUILD_NUMBER -ne ((Invoke-RestMethod `
+      https://ci.appveyor.com/api/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/history?recordsNumber=50).builds | `
+      Where-Object pullRequestId -eq $env:APPVEYOR_PULL_REQUEST_NUMBER)[0].buildNumber) { `
+        throw "There are newer queued builds for this pull request, failing early." }
+  # Add miniconda to PATH
+  - ps: $env:PATH += "$env:MINICONDA;$env:MINICONDA\Scripts;$env:MINICONDA\bin;"
+  # Update conda and install packages
+  - conda update --yes conda
+  - conda install --yes conda-build jinja2 anaconda-client
+  # Install RTools for building r packages on windows
+  - ps: continuous-integration\\appveyor\\install.ps1
+
+build: false
+
+test_script:
+  - mkdir out
+  - "%CMD_IN_ENV% conda build conda-recipe --output-folder out"
+
+# Enable it for debugging purposes
+# artifacts:
+#   - path: 'out/win-64/*.tar.bz2'
+#     name: r-mice
+
+deploy_script:
+  # Use cmd instead of ps as the latter recognizes print messages as exceptions
+  - cmd: anaconda -t %CONDA_UPLOAD_TOKEN% upload --force out/win-%PYTHON_ARCH%/*.tar.bz2
+    on:
+      branch: master
