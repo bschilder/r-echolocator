@@ -10,8 +10,8 @@ package:
 source:
   fn: dataMaid_1.1.0.tar.gz
   url:
-    - {{ cran_mirror }}/src/contrib/dataMaid_1.1.0.tar.gz
-    - {{ cran_mirror }}/src/contrib/Archive/dataMaid/dataMaid_1.1.0.tar.gz
+    - https://cran.r-project.org/src/contrib/dataMaid_1.1.0.tar.gz
+    - https://cran.r-project.org/src/contrib/Archive/dataMaid/dataMaid_1.1.0.tar.gz
   sha256: 5ec8b954a7b3503b030c50bcf96cdec9a6b2f2c5eadb1626048b65c200f397e9
 
 build:
